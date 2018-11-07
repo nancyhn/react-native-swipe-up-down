@@ -9,42 +9,36 @@ import {
   LayoutAnimation,
   TouchableOpacity
 } from 'react-native';
-
+import PropTypes from 'prop-types';
 import SwipeIcon from './components/SwipeIcon';
 import images from './assets/images';
 
 const MARGIN_TOP = Platform.OS === 'ios' ? 20 : 0;
 const DEVICE_HEIGHT = Dimensions.get('window').height - MARGIN_TOP;
-type Props = {
-  swipeHeight?: number,
-  itemMini: object,
-  itemFull: object,
-  disablePressToShow: boolean,
-  style?: object,
-  onShowMini?: () => void,
-  onShowFull?: () => void,
-  onMoveDown?: () => void,
-  onMoveUp?: () => void
-};
-export default class SwipeUpDown extends Component<Props> {
+
+export default class SwipeUpDown extends Component {
+  static defautProps = {
+    disablePressToShow: false
+  };
   constructor(props) {
     super(props);
     this.state = {
-      collapsed: true
+      collapsed: false
     };
-    this.disablePressToShow = props.disablePressToShow || false;
+    this.disablePressToShow = props.disablePressToShow;
     this.SWIPE_HEIGHT = props.swipeHeight || 60;
     this._panResponder = null;
     this.top = this.SWIPE_HEIGHT;
     this.height = this.SWIPE_HEIGHT;
     this.customStyle = {
       style: {
-        bottom: 0,
+        bottom: 50,
         top: this.top,
         height: this.height
       }
     };
     this.checkCollapsed = true;
+    this.showFull = this.showFull.bind(this);
   }
 
   componentWillMount() {
@@ -55,25 +49,41 @@ export default class SwipeUpDown extends Component<Props> {
     });
   }
 
+  componentDidMount() {
+    this.props.hasRef && this.props.hasRef(this);
+  }
+
   updateNativeProps() {
-    LayoutAnimation.spring();
+    switch (this.props.animation) {
+      case 'linear':
+        LayoutAnimation.linear();
+        break;
+      case 'spring':
+        LayoutAnimation.spring();
+        break;
+      case 'easeInEaseOut':
+        LayoutAnimation.easeInEaseOut();
+        break;
+      case 'none':
+      default:
+        break;
+    }
     this.viewRef.setNativeProps(this.customStyle);
   }
 
   _onPanResponderMove(event, gestureState) {
-    const { onMoveUp, onMoveDown } = this.props;
     if (gestureState.dy > 0 && !this.checkCollapsed) {
       // SWIPE DOWN
+
       this.customStyle.style.top = this.top + gestureState.dy;
       this.customStyle.style.height = DEVICE_HEIGHT - gestureState.dy;
       this.swipeIconRef && this.swipeIconRef.setState({ icon: images.minus });
-      !this.state.collapsed && this.setState({ collapsed: true });
+      !this.state.collapsed && this.setState({ collapsed: false });
       this.updateNativeProps();
-      onMoveDown && onMoveDown();
     } else if (this.checkCollapsed && gestureState.dy < -60) {
       // SWIPE UP
-      this.top = 0;
-      this.customStyle.style.top = DEVICE_HEIGHT + gestureState.dy;
+      // this.top = 0;
+      // this.customStyle.style.top = DEVICE_HEIGHT + gestureState.dy;
       this.customStyle.style.height = -gestureState.dy + this.SWIPE_HEIGHT;
       this.swipeIconRef &&
         this.swipeIconRef.setState({ icon: images.minus, showIcon: true });
@@ -86,12 +96,11 @@ export default class SwipeUpDown extends Component<Props> {
       }
       this.updateNativeProps();
       this.state.collapsed && this.setState({ collapsed: false });
-      onMoveUp && onMoveUp();
     }
   }
 
   _onPanResponderRelease(event, gestureState) {
-    if (gestureState.dy < -100 || gestureState.dy < 100) {
+    if (gestureState.dy < -50 || gestureState.dy < 50) {
       this.showFull();
     } else {
       this.showMini();
@@ -111,12 +120,14 @@ export default class SwipeUpDown extends Component<Props> {
   }
 
   showMini() {
-    const { onShowMini } = this.props;
-    this.customStyle.style.top = DEVICE_HEIGHT - this.SWIPE_HEIGHT;
-    this.customStyle.style.height = this.SWIPE_HEIGHT;
+    const { onShowMini, itemMini } = this.props;
+    this.customStyle.style.top = itemMini
+      ? DEVICE_HEIGHT - this.SWIPE_HEIGHT
+      : DEVICE_HEIGHT;
+    this.customStyle.style.height = itemMini ? this.SWIPE_HEIGHT : 0;
     this.swipeIconRef && this.swipeIconRef.setState({ showIcon: false });
     this.updateNativeProps();
-    !this.state.collapsed && this.setState({ collapsed: true });
+    !this.state.collapsed && this.setState({ collapsed: false });
     this.checkCollapsed = true;
     onShowMini && onShowMini();
   }
@@ -127,39 +138,65 @@ export default class SwipeUpDown extends Component<Props> {
     return (
       <View
         ref={ref => (this.viewRef = ref)}
-        {...this._panResponder.panHandlers}
         style={[
           styles.wrapSwipe,
-          { height: this.SWIPE_HEIGHT, marginTop: MARGIN_TOP },
+          {
+            height: this.SWIPE_HEIGHT,
+            marginTop: MARGIN_TOP
+          },
+          !itemMini && collapsed && { marginBottom: -200 },
           style
         ]}
       >
-        <SwipeIcon hasRef={ref => (this.swipeIconRef = ref)} />
+        <SwipeIcon
+          onClose={() => this.showMini()}
+          hasRef={ref => (this.swipeIconRef = ref)}
+        />
+
         {collapsed ? (
-          <TouchableOpacity
-            activeOpacity={this.disablePressToShow ? 1 : 0.6}
-            style={{ height: this.SWIPE_HEIGHT }}
-            onPress={() => !this.disablePressToShow && this.showFull()}
-          >
-            {itemMini}
-          </TouchableOpacity>
+          itemMini ? (
+            <TouchableOpacity
+              activeOpacity={this.disablePressToShow ? 1 : 0.6}
+              style={{ height: this.SWIPE_HEIGHT }}
+              onPress={() => !this.disablePressToShow && this.showFull()}
+            >
+              {itemMini}
+            </TouchableOpacity>
+          ) : null
         ) : (
           itemFull
         )}
+        <View {...this._panResponder.panHandlers} style={{ width: Dimensions.get('window').width - 80, height: 100, backgroundColor: 'transparent', position: 'absolute' }}/>
+
       </View>
     );
   }
 }
-
+SwipeUpDown.propTypes = {
+  hasRef: PropTypes.func,
+  swipeHeight: PropTypes.number,
+  itemMini: PropTypes.object,
+  itemFull: PropTypes.object,
+  disablePressToShow: PropTypes.bool,
+  style: PropTypes.object,
+  onShowMini: PropTypes.func,
+  onShowFull: PropTypes.func,
+  animation: PropTypes.string
+};
 const styles = StyleSheet.create({
   wrapSwipe: {
     padding: 10,
-    backgroundColor: '#ccc',
+    backgroundColor: 'white',
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     position: 'absolute',
     bottom: 0,
     left: 0,
-    right: 0
+    right: 0,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
   }
 });
