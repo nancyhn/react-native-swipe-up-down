@@ -7,7 +7,7 @@ export default class SwipeIcon extends Component {
     super(props);
     this.state = {
       icon: images.minus,
-      showIcon: false
+      showIcon: true
     };
   }
   componentDidMount() {
