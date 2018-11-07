@@ -12,9 +12,10 @@ import {
 import PropTypes from 'prop-types';
 import SwipeIcon from './components/SwipeIcon';
 import images from './assets/images';
+import sz from '../../../src/constants/Layout'
 
 const MARGIN_TOP = Platform.OS === 'ios' ? 20 : 0;
-const DEVICE_HEIGHT = Dimensions.get('window').height - MARGIN_TOP;
+const DEVICE_HEIGHT = Dimensions.get('window').height - sz.statusHeight - 130;
 
 export default class SwipeUpDown extends Component {
   static defautProps = {
@@ -27,13 +28,13 @@ export default class SwipeUpDown extends Component {
       
     };
     this.disablePressToShow = props.disablePressToShow;
-    this.SWIPE_HEIGHT = props.swipeHeight || 250;
+    this.SWIPE_HEIGHT = props.swipeHeight || 60;
     this._panResponder = null;
     this.top = this.SWIPE_HEIGHT;
     this.height = this.SWIPE_HEIGHT;
     this.customStyle = {
       style: {
-        bottom: 50,
+        bottom: 0,
         top: this.top,
         height: this.height
       }
@@ -143,7 +144,7 @@ export default class SwipeUpDown extends Component {
           styles.wrapSwipe,
           {
             height: this.SWIPE_HEIGHT,
-            marginTop: MARGIN_TOP
+            marginTop: sz.statusHeight
           },
           !itemMini && collapsed && { marginBottom: -200 },
           style
