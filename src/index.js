@@ -13,13 +13,16 @@ import PropTypes from 'prop-types';
 import SwipeIcon from './components/SwipeIcon';
 import images from './assets/images';
 import sz from '../../../src/constants/Layout'
+import { getStatusBarHeight } from 'react-native-status-bar-height';
+const statusH = Platform.OS === 'ios' ? getStatusBarHeight() : 0
 
-const MARGIN_TOP = Platform.OS === 'ios' ? 20 : 0;
-const DEVICE_HEIGHT = Dimensions.get('window').height - sz.statusHeight - 130;
+const MARGIN_TOP = Platform.OS === 'ios' ? 44 : 0;
+const DEVICE_HEIGHT = Dimensions.get('window').height - MARGIN_TOP - 50 - 50;
 
 export default class SwipeUpDown extends Component {
   static defautProps = {
-    disablePressToShow: false
+    disablePressToShow: false,
+    tabbarHeight: 50,
   };
   constructor(props) {
     super(props);
@@ -28,14 +31,12 @@ export default class SwipeUpDown extends Component {
       
     };
     this.disablePressToShow = props.disablePressToShow;
-    this.SWIPE_HEIGHT = props.swipeHeight || 60;
+    this.SWIPE_HEIGHT = props.swipeHeight || 250
     this._panResponder = null;
-    this.top = this.SWIPE_HEIGHT;
     this.height = this.SWIPE_HEIGHT;
     this.customStyle = {
       style: {
         bottom: 0,
-        top: this.top,
         height: this.height
       }
     };
@@ -77,7 +78,6 @@ export default class SwipeUpDown extends Component {
     if (gestureState.dy > 0 && !this.checkCollapsed) {
       // SWIPE DOWN
 
-      this.customStyle.style.top = this.top + gestureState.dy;
       this.customStyle.style.height = DEVICE_HEIGHT - gestureState.dy;
       this.swipeIconRef && this.swipeIconRef.setState({ icon: images.minus });
       !this.state.collapsed && this.setState({ collapsed: false });
@@ -89,13 +89,11 @@ export default class SwipeUpDown extends Component {
       this.customStyle.style.height = -gestureState.dy + this.SWIPE_HEIGHT;
       this.swipeIconRef &&
         this.swipeIconRef.setState({ icon: images.minus, showIcon: true });
-      if (this.customStyle.style.top <= DEVICE_HEIGHT / 2) {
         this.swipeIconRef &&
-          this.swipeIconRef.setState({
-            icon: images.arrow_down,
-            showIcon: true
-          });
-      }
+        this.swipeIconRef.setState({
+          icon: images.arrow_down,
+          showIcon: true
+        });
       this.updateNativeProps();
       this.state.collapsed && this.setState({ collapsed: false });
     }
@@ -111,7 +109,6 @@ export default class SwipeUpDown extends Component {
 
   showFull() {
     const { onShowFull } = this.props;
-    this.customStyle.style.top = 0;
     this.customStyle.style.height = DEVICE_HEIGHT;
     this.swipeIconRef &&
       this.swipeIconRef.setState({ icon: images.arrow_down, showIcon: true });
@@ -123,9 +120,6 @@ export default class SwipeUpDown extends Component {
 
   showMini() {
     const { onShowMini, itemMini } = this.props;
-    this.customStyle.style.top = itemMini
-      ? DEVICE_HEIGHT - this.SWIPE_HEIGHT
-      : DEVICE_HEIGHT;
     this.customStyle.style.height = itemMini ? this.SWIPE_HEIGHT : 0;
     this.swipeIconRef && this.swipeIconRef.setState({ icon: images.minus, showIcon: true });
     this.updateNativeProps();
@@ -146,7 +140,6 @@ export default class SwipeUpDown extends Component {
             height: this.SWIPE_HEIGHT,
             marginTop: sz.statusHeight
           },
-          !itemMini && collapsed && { marginBottom: -200 },
           style
         ]}
       >
@@ -155,19 +148,7 @@ export default class SwipeUpDown extends Component {
           hasRef={ref => (this.swipeIconRef = ref)}
         />
 
-        {collapsed ? (
-          itemMini ? (
-            <TouchableOpacity
-              activeOpacity={this.disablePressToShow ? 1 : 0.6}
-              style={{ height: this.SWIPE_HEIGHT }}
-              onPress={() => !this.disablePressToShow && this.showFull()}
-            >
-              {itemMini}
-            </TouchableOpacity>
-          ) : null
-        ) : (
-          itemFull
-        )}
+        {collapsed ?  itemMini : itemFull }
         <View {...this._panResponder.panHandlers} style={{ width: Dimensions.get('window').width - 80, height: 100, backgroundColor: 'transparent', position: 'absolute' }}/>
 
       </View>
