@@ -46,6 +46,8 @@ export default class SwipeUpDown extends Component {
 
   componentWillMount() {
     this._panResponder = PanResponder.create({
+      onStartShouldSetPanResponder: (e, gestureState) => true,
+      onPanResponderEnd: (e, gestureState) => true,
       onMoveShouldSetPanResponder: (event, gestureState) => true,
       onPanResponderMove: this._onPanResponderMove.bind(this),
       onPanResponderRelease: this._onPanResponderRelease.bind(this)
@@ -103,7 +105,12 @@ export default class SwipeUpDown extends Component {
     if (gestureState.dy < -50 || gestureState.dy < 50) {
       this.showFull();
     } else {
-      this.showMini();
+      if (this.checkCollapsed === false) {
+        this.showMini();
+      }
+      else {
+        this.showMinimize()
+      }
     }
   }
 
@@ -121,6 +128,15 @@ export default class SwipeUpDown extends Component {
   showMini() {
     const { onShowMini, itemMini } = this.props;
     this.customStyle.style.height = itemMini ? this.SWIPE_HEIGHT : 0;
+    this.swipeIconRef && this.swipeIconRef.setState({ icon: images.minus, showIcon: true });
+    this.updateNativeProps();
+    !this.state.collapsed && this.setState({ collapsed: false });
+    this.checkCollapsed = true;
+    onShowMini && onShowMini();
+  }
+  showMinimize() {
+    const { onShowMini, itemMini } = this.props;
+    this.customStyle.style.height = 20;
     this.swipeIconRef && this.swipeIconRef.setState({ icon: images.minus, showIcon: true });
     this.updateNativeProps();
     !this.state.collapsed && this.setState({ collapsed: false });
@@ -148,7 +164,7 @@ export default class SwipeUpDown extends Component {
           hasRef={ref => (this.swipeIconRef = ref)}
         />
 
-        {collapsed ?  itemMini : itemFull }
+        {collapsed ?  (this.state.mini === true ? itemMini: itemFull) : itemFull }
         <View {...this._panResponder.panHandlers} style={{ width: Dimensions.get('window').width - 80, height: 100, backgroundColor: 'transparent', position: 'absolute' }}/>
 
       </View>
